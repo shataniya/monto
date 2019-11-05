@@ -1,0 +1,26 @@
+{
+  "dependencies": {
+    "mongodb": "^3.3.3"
+  },
+  "name": "monto",
+  "description": "> npm i monto",
+  "version": "1.0.0",
+  "main": "monto.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shataniya/monto.git"
+  },
+  "keywords": [
+    "monto",
+    "mongodb"
+  ],
+  "author": "sataniya",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shataniya/monto/issues"
+  },
+  "homepage": "https://github.com/shataniya/monto#readme"
+}
