@@ -1,35 +1,6 @@
 const path = require("path")
 const MongoClient = require("mongodb").MongoClient
-
-function __connect(url,options,__fn){
-    var dbName = path.parse(url).name
-    MongoClient.connect(url,options,function(err,client){
-        if(err) console.log(err)
-        __fn(client.db(dbName))
-    })
-}
-
-function __callback(){
-    console.log("\033[33mWelcome to the monto framework!\033[39m")
-}
-
-function __onConnect(url,options,__fn){
-    var dbName = path.parse(url).name
-    MongoClient.connect(url,options,function(err,client){
-        if(err) console.log(err)
-        if(__fn){
-            __fn(client.db(dbName))
-        }else{
-            __callback()
-        }
-    })
-}
-
-function __client(url,options,collection,__fn){
-    __connect(url,options,function(db){
-        __fn(db.collection(collection))
-    })
-}
+const EventEmitter = require("events").EventEmitter
 
 /**
  * @dsc The goal is to create the best used framework for operating mongodb
@@ -37,6 +8,9 @@ function __client(url,options,collection,__fn){
 function monto(url,options){
     return new monto.fn.init(url,options)
 }
+
+monto.prototype = Object.create(EventEmitter.prototype)
+monto.prototype.constructor = monto
 
 monto.fn = monto.prototype
 
@@ -50,19 +24,47 @@ monto.prototype.init = function(url,options){
     this.dir = path.parse(url).dir
     this.dbName = path.parse(url).name
     this.options = options || { useUnifiedTopology: true }
+    __monto__init.call(this)
     return this
+}
+
+function __monto__init(){
+    MongoClient.connect(this.url,this.options,(err,client)=>{
+        if(err){
+            this.emit("error",err)
+        }
+        var db = client.db(this.dbName)
+        this.emit("connect",client)
+        this.emit("insertOne",db)
+        this.emit("insertMany",db)
+        this.emit("findOne",db)
+        this.emit("findMany",db)
+        this.emit("updateOne",db)
+        this.emit("updateMany",db)
+        this.emit("deleteOne",db)
+        this.emit("deleteMany",db)
+        this.emit("drop",db)
+        this.emit("close",client)
+    })
 }
 
 monto.prototype.init.prototype = monto.fn
 
 /**
- * @function onConnect
+ * @function connection
  * @dsc The specified function is triggered when the database is successfully connected.
  * @param fn @dsc The function to be called
  */
-monto.prototype.onConnect = function(fn){
-    __onConnect(this.url,this.options,fn)
+monto.prototype.connection = function(fn){
+    this.on("connect",fn)
     return this
+}
+
+/**
+ * @function close
+ */
+monto.prototype.close = function(fn){
+    this.once("close",fn)
 }
 
 /**
@@ -83,8 +85,8 @@ monto.prototype.insertOne = function(collection,data){
         throw new Error("\033[31minsertOne() requires data to be an object!\033[39m")
     }
     return new Promise((resolve,reject)=>{
-        __client(this.url,this.options,collection,function(db){
-            db.insertOne(data,(err,result)=>{
+        this.on("insertOne",db=>{
+            db.collection(collection).insertOne(data,(err,result)=>{
                 if(err){
                     reject(err)
                 }else{
@@ -128,8 +130,8 @@ monto.prototype.insertMany = function(collection,data){
         throw new Error("\033[31minsertMany() requires data to be an array!\033[39m")
     }
     return new Promise((resolve,reject)=>{
-        __client(this.url,this.options,collection,function(db){
-            db.insertMany(data,function(err,result){
+        this.on("insertMany",db=>{
+            db.collection(collection).insertMany(data,(err,result)=>{
                 if(err){
                     reject(err)
                 }else{
@@ -147,10 +149,9 @@ monto.prototype.insertMany = function(collection,data){
  * @param condition
  */
 monto.prototype.findOne = function(collection,condition){
-    
     return new Promise((resolve,reject)=>{
-        __client(this.url,this.options,collection,function(db){
-            db.findOne(condition,(err,doc)=>{
+        this.on("findOne",db=>{
+            db.collection(collection).findOne(condition,(err,doc)=>{
                 if(err){
                     reject(err)
                 }else{
@@ -196,8 +197,8 @@ monto.prototype.find = function(collection,condition,flag){
  */
 monto.prototype.updateOne = function(collection,condition,modify){
     return new Promise((resolve,reject)=>{
-        __client(this.url,this.options,collection,function(db){
-            db.updateOne(condition,modify,(err,result)=>{
+        this.on("updateOne",db=>{
+            db.collection(collection).updateOne(condition,modify,(err,result)=>{
                 if(err){
                     reject(err)
                 }else{
@@ -226,8 +227,8 @@ monto.prototype.update = function(collection,condition,modify){
  */
 monto.prototype.updateMany = function(collection,condition,modify){
     return new Promise((resolve,reject)=>{
-        __client(this.url,this.options,collection,function(db){
-            db.updateMany(condition,modify,(err,result)=>{
+        this.on("updateMany",db=>{
+            db.collection(collection).updateMany(condition,modify,(err,result)=>{
                 if(err){
                     reject(err)
                 }else{
@@ -245,8 +246,8 @@ monto.prototype.updateMany = function(collection,condition,modify){
  */
 monto.prototype.deleteOne = function(collection,condition){
     return new Promise((resolve,reject)=>{
-        __client(this.url,this.options,collection,function(db){
-            db.deleteOne(condition,(err,result)=>{
+        this.on("deleteOne",db=>{
+            db.collection(collection).deleteOne(condition,(err,result)=>{
                 if(err){
                     reject(err)
                 }else{
@@ -273,8 +274,8 @@ monto.prototype.remove = function(collection,condition){
  */
 monto.prototype.deleteMany = function(collection,condition){
     return new Promise((resolve,reject)=>{
-        __client(this.url,this.options,collection,function(db){
-            db.deleteMany(condition,(err,result)=>{
+        this.on("deleteMany",db=>{
+            db.collection(collection).deleteMany(condition,(err,result)=>{
                 if(err){
                     reject(err)
                 }else{
@@ -283,6 +284,18 @@ monto.prototype.deleteMany = function(collection,condition){
             })
         })
     })
+}
+
+/**
+ * @function drop
+ * @description Remove a collection from the database
+ * @param collection
+ */
+monto.prototype.drop = function(collection){
+    this.on("drop",db=>{
+        db.collection(collection).drop()
+    })
+    return this
 }
 
 
@@ -342,8 +355,9 @@ monto.prototype.go = function(){
         this.sortObject = {}
     }
     return new Promise((resolve,reject)=>{
-        __client(this.url,this.options,this.collection,db=>{
-            db.find(this.condition)
+        this.on("findMany",db=>{
+            db.collection(this.collection)
+            .find(this.condition)
             .limit(this.limitNum)
             .skip(this.skipNum)
             .sort(this.sortObject)

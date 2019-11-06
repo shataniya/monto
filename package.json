@@ -4,7 +4,7 @@
   },
   "name": "monto",
   "description": "> npm i monto",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "monto.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
