@@ -38,8 +38,6 @@ function monto(url,options){
     return new monto.fn.init(url,options)
 }
 
-var baseurl = "mongodb://localhost:27017/database1"
-
 monto.fn = monto.prototype
 
 /**
@@ -52,6 +50,7 @@ monto.prototype.init = function(url,options){
     this.dir = path.parse(url).dir
     this.dbName = path.parse(url).name
     this.options = options || { useUnifiedTopology: true }
+    return this
 }
 
 monto.prototype.init.prototype = monto.fn
@@ -70,9 +69,16 @@ monto.prototype.onConnect = function(fn){
  * @function insertOne
  * @dsc Insert a piece of data into the database
  * @param collection
- * @param data @dsc The data to be inserted
+ * @param data
  */
 monto.prototype.insertOne = function(collection,data){
+    if(arguments.length === 1){
+        if(Object.prototype.toString.call(collection) !== "[object Object]"){
+            throw new Error("\033[31minsertOne() requires data to be an object!\033[39m")
+        }
+        this.data = check(collection,this.opt)
+        return this.insertOne(this.collection,this.data)
+    }
     if(Object.prototype.toString.call(data) !== "[object Object]"){
         throw new Error("\033[31minsertOne() requires data to be an object!\033[39m")
     }
@@ -107,6 +113,17 @@ monto.prototype.insert = function(collection,data){
  * @param data @dsc The data to be inserted
  */
 monto.prototype.insertMany = function(collection,data){
+    if(arguments.length === 1){
+        if(Object.prototype.toString.call(collection) !== "[object Array]"){
+            throw new Error("\033[31minsertMany() requires data to be an array!\033[39m")
+        }
+        var odata = []
+        for(let i=0,len=collection.length;i<len;i++){
+            odata.push(check(collection[i],this.opt))
+        }
+        this.data = odata
+        return this.insertMany(this.collection,this.data)
+    }
     if(Object.prototype.toString.call(data) !== "[object Array]"){
         throw new Error("\033[31minsertMany() requires data to be an array!\033[39m")
     }
@@ -339,6 +356,77 @@ monto.prototype.go = function(){
             })
         })
     })
+}
+
+
+/**
+ * @description Introducing the Schema module
+ */
+const Schema = require("./Schema")
+monto.Schema = Schema
+
+
+/**
+ * @description Introducing the mdoel module
+ */
+function isObject(o){
+    return Object.prototype.toString.call(o) === "[object Object]"
+}
+
+function objectLength(o){
+    return Object.keys(o).length
+}
+
+function dataType(o){
+    return Object.prototype.toString.call(o)
+}
+
+function equal(target,source){
+    return dataType(target) === "[object "+ source.name +"]"
+}
+
+function check(data,options){
+    if(objectLength(data) > objectLength(options)){
+        throw new Error("\033[31mData does not match the data model!\033[39m")
+    }
+    for(let o in options){
+        if(!data[o]){
+            if(!isObject(options[o])){
+                throw new Error("\033[31mData does not match the data model!\033[39m")
+            }
+            data[o] = options[o].default // Set to default if it does not exist
+        }else{
+            if(!isObject(options[o])){
+                if(!equal(data[o],options[o])){
+                    throw new Error("\033[31mData does not match the data model!\033[39m")
+                }
+            }else{
+                if(dataType(data[o]) !== options[o].type){
+                    throw new Error("\033[31mData does not match the data model!\033[39m")
+                }
+            }
+        }
+    }
+    return data
+}
+
+/**
+ * @function model
+ * @description Use Schema to constrain collection
+ * @param collection
+ * @param SchemaModel
+ */
+monto.prototype.model = function(collection,SchemaModel){
+    if(!collection){
+        throw new Error("\033[31mMissing collection!\033[39m")
+    }
+    if(!(SchemaModel instanceof Schema)){
+        throw new Error("\033[31mThe second argument to model must be an instance of Schema!\033[39m")
+    }
+    this.collection = collection
+    this.SchemaModel = SchemaModel
+    this.opt = SchemaModel.options
+    return this
 }
 
 module.exports = monto
