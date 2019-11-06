@@ -401,7 +401,7 @@ function check(data,options){
                     throw new Error("\033[31mData does not match the data model!\033[39m")
                 }
             }else{
-                if(dataType(data[o]) !== options[o].type){
+                if(!equal(data[o],options[o].type)){
                     throw new Error("\033[31mData does not match the data model!\033[39m")
                 }
             }
