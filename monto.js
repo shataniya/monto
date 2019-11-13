@@ -56,7 +56,7 @@ monto.prototype.init.prototype = monto.fn
  * @param fn @dsc The function to be called
  */
 monto.prototype.connection = function(fn){
-    this.on("connect",fn)
+    this.once("connect",fn)
     return this
 }
 
@@ -85,6 +85,7 @@ monto.prototype.insertOne = function(collection,data){
         throw new Error("\033[31minsertOne() requires data to be an object!\033[39m")
     }
     return new Promise((resolve,reject)=>{
+        __monto__init.call(this)
         this.on("insertOne",db=>{
             db.collection(collection).insertOne(data,(err,result)=>{
                 if(err){
@@ -130,6 +131,7 @@ monto.prototype.insertMany = function(collection,data){
         throw new Error("\033[31minsertMany() requires data to be an array!\033[39m")
     }
     return new Promise((resolve,reject)=>{
+        __monto__init.call(this)
         this.on("insertMany",db=>{
             db.collection(collection).insertMany(data,(err,result)=>{
                 if(err){
@@ -150,6 +152,7 @@ monto.prototype.insertMany = function(collection,data){
  */
 monto.prototype.findOne = function(collection,condition){
     return new Promise((resolve,reject)=>{
+        __monto__init.call(this)
         this.on("findOne",db=>{
             db.collection(collection).findOne(condition,(err,doc)=>{
                 if(err){
@@ -197,6 +200,7 @@ monto.prototype.find = function(collection,condition,flag){
  */
 monto.prototype.updateOne = function(collection,condition,modify){
     return new Promise((resolve,reject)=>{
+        __monto__init.call(this)
         this.on("updateOne",db=>{
             db.collection(collection).updateOne(condition,modify,(err,result)=>{
                 if(err){
@@ -227,6 +231,7 @@ monto.prototype.update = function(collection,condition,modify){
  */
 monto.prototype.updateMany = function(collection,condition,modify){
     return new Promise((resolve,reject)=>{
+        __monto__init.call(this)
         this.on("updateMany",db=>{
             db.collection(collection).updateMany(condition,modify,(err,result)=>{
                 if(err){
@@ -246,6 +251,7 @@ monto.prototype.updateMany = function(collection,condition,modify){
  */
 monto.prototype.deleteOne = function(collection,condition){
     return new Promise((resolve,reject)=>{
+        __monto__init.call(this)
         this.on("deleteOne",db=>{
             db.collection(collection).deleteOne(condition,(err,result)=>{
                 if(err){
@@ -274,6 +280,7 @@ monto.prototype.remove = function(collection,condition){
  */
 monto.prototype.deleteMany = function(collection,condition){
     return new Promise((resolve,reject)=>{
+        __monto__init.call(this)
         this.on("deleteMany",db=>{
             db.collection(collection).deleteMany(condition,(err,result)=>{
                 if(err){
@@ -355,6 +362,7 @@ monto.prototype.go = function(){
         this.sortObject = {}
     }
     return new Promise((resolve,reject)=>{
+        __monto__init.call(this)
         this.on("findMany",db=>{
             db.collection(this.collection)
             .find(this.condition)
